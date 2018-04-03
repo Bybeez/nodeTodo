@@ -1,0 +1,25 @@
+doctype html
+head
+  meta(charset='UTF-8')
+  title REGISTER
+  link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/css/materialize.min.css')
+  link(href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet')
+  script(src='js/jquery.min.js')
+header
+main
+
+   block content
+      .main.container
+         .row
+            .col-md-6.col-md-offset-3
+               h1.display-4.m-b-2 REGISTER
+                  form(method='POST', action='/newUser')
+                     div.form-group
+                        label(for="pseudo") Pseudo
+                        input#pseudo.form-control(type='text', placeholder= 'pseudo', name='pseudo')
+                     div.form-group
+                        label(for="password") Password
+                        input#password.form-control(type='password', placeholder= 'password', name='password')
+
+                     br
+                     button.btn.btn-primary(type='submit') Edit

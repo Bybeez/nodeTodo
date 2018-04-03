@@ -1,0 +1,28 @@
+doctype html
+head
+  meta(charset='UTF-8')
+  title #{title}
+  link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/css/materialize.min.css')
+  link(href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet')
+  script(src='js/jquery.min.js')
+header
+main
+   table
+      thead
+         tr
+            th Description
+            th Status
+            th Complete
+      
+      tbody
+      each todo in todos
+         tr
+            td= todo.description
+            td= todo.status
+            td
+               form(method='POST', action = '/todos')
+                  input(type='hidden', name='_method', value = 'patch')
+                  input(type='hidden', name='id', value= todo.id)
+                  input(type='hidden', name='description', value= todo.description)
+                  input(type='hidden', name='status', value= 1)
+                  button(type='submit') It's done
