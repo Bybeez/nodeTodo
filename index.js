@@ -1,7 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const todos = require('./models/todos')
-const users = require('./models/users')
+const todo = require('./controllers/todos')
+const users = require('./controllers/users')
 const bcrypt = require('bcrypt')
 const cookieParser = require('cookie-parser')
 const session = require('express-session')
@@ -23,40 +23,13 @@ app.get('/users/create', (req, res) => {
    res.render('newUser')
 })
 
-app.post('/newUser', (req, res) => {
-   users.create(
-      {pseudo : req.body.pseudo, password: bcrypt.hashSync(req.body.password, 1)}
-   ).then(result => {
-      if(req.header("Accept") == "application/json")
-      {
-         res.json({"status success":result})
-      }
-      else{
-         res.redirect('/todos')
-      }
-   })
-})
+app.post('/newUser', users.newUser(req, res))
 
 app.get('/login', (req, res) => {
    res.render('login')
 })
 
-app.post('/login', (req, res) => {
-   users.findOne({where : {pseudo: req.body.pseudo }}).then(user => {
-      if(bcrypt.compareSync(req.body.password, user.password))
-      {
-         req.session.userId = user.id
-         if(req.header("Accept") == "application/json")
-         {
-            res.send(user)
-         }
-         else{
-            res.redirect('/todos')
-         }
-      }
-      res.redirect('/login')
-   })
-})
+app.post('/login', users.login(req, res))
 
 app.use((req, res, next) => {
    if(req.session.userId)
@@ -73,45 +46,9 @@ app.all('/', (req, res) => {
    res.redirect('/todos')
 })
 
-app.post('/todos', (req, res) => {
-   ownsToDoOrRedirect(req, res, req.body.toDoId)
-   var desc = req.body.description
-   if(req.body._method == 'patch')
-   {
-      update(req, res)
-   }
-   else{
-      if(desc)
-      {
-         todos.create(
-            {description : desc, status: false, owner_id: req.session.userId}
-         ).then(result => {
-            if(req.header("Accept") == "application/json")
-            {
-               res.json({"status success":result})
-            }
-            else{
-               res.redirect('/todos')
-            }
-         })
-      }
-   }
-})
+app.post('/todos', todo.newToDo(req, res))
 
-app.get('/todos', (req, res) => {
-   todos.findAll({where : {owner_id: req.session.userId}}, order: [[status, 'asc']]).then(todos => {
-      if(req.header("Accept") == "application/json")
-      {
-         res.send(todos)
-      }
-      else{
-         res.render('index', {
-            title: 'todos',
-            todos: todos
-         })
-      }
-  })
-})
+app.get('/todos', todo.allToDos(req, res))
 
 app.get('/todos/add', (req, res) => {
    if(req.header("Accept") != "application/json")
@@ -122,53 +59,15 @@ app.get('/todos/add', (req, res) => {
    }
 })
 
-app.get('/todos/:toDoId/edit', (req, res) => {
-   ownsToDoOrRedirect(req, res, req.params.toDoId)
-   todos.findOne({where : {id: req.params.toDoId}}).then(todo => {
-      if(req.header("Accept") != "application/json")
-      {
-         res.render('edit', {
-            title: 'editTodo',
-            todo: todo
-         })
-      }
-   })
-})
+app.get('/todos/:toDoId/edit', todo.editToDo(req, res))
 
-app.get('/todos/:toDoId/del', (req, res) => {
-   ownsToDoOrRedirect(req, res, req.params.toDoId)
-   todos.destroy({where : {id: req.params.toDoId}}).then(result => {
-      res.redirect('/todos')
-   })
-})
+app.get('/todos/:toDoId/del', todo.deleteToDo(req, res))
 
-app.get('/todos/:toDoId', (req, res) => {
-   ownsToDoOrRedirect(req, res, req.params.toDoId)
-   todos.findOne({where : {id: req.params.toDoId}}).then(todo => {
-      if(req.header("Accept") == "application/json")
-      {
-         res.send(todos)
-      }
-      else{
-         res.render('show', {
-            title: 'todo : '+todo.id,
-            todo: todo
-         })
-      }
-   })
-})
+app.get('/todos/:toDoId', todo.oneToDo(req, res))
 
-app.delete('/todos/:toDoId', (req, res) => {
-   ownsToDoOrRedirect(req, res, req.body.toDoId)
-   todos.destroy({where : {id: req.params.toDoId}}).then(result => {
-      res.send((result == 1 ? 'Ok' : 'Not Ok'))
-   })
-})
+app.delete('/todos/:toDoId', todo.deleteToDo(req, res))
 
-app.patch('/todos/:toDoId', (req, res) => {
-   ownsToDoOrRedirect(req, res, req.body.toDoId)
-   update(req, res)
-})
+app.patch('/todos/:toDoId', todo.update(req, res))
 
 
 
@@ -180,33 +79,7 @@ app.listen(PORT, () => {
    console.log("Listening on : ", PORT)
 })
 
-function update(req, res)
-{
-   todos.update(
-      {
-         description: req.body.description,
-         status: (req.body.status)? true : false
-      },
-      { where: { id: req.body.id } }
-   ).then(result => {
-      if(req.header("Accept") == "application/json")
-      {
-       function auth(req, res)
+function auth(req, res)
 {
    res.redirect('/login')
-}  res.json({"status success": result})
-      }
-      else{
-         res.redirect('/todos')
-      }
-   })
-}
-
-function ownsToDoOrRedirect(req, res, id)
-{
-   todos.findOne({where : {id: id}}).then(todo => {
-      if(req.session.userId != todo.owner_id){
-            res.redirect('/todos')
-      }
-   })
 }
